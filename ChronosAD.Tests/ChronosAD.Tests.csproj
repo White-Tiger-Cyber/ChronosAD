@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>ChronosAD.Tests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../ChronosAD/Models/User.cs" />
+    <Compile Include="../ChronosAD/Models/Punch.cs" />
+    <Compile Include="../ChronosAD/Models/Message.cs" />
+    <Compile Include="../ChronosAD/Models/Config.cs" />
+    <Compile Include="../ChronosAD/Data/DatabaseService.cs" />
+    <Compile Include="../ChronosAD/Data/DatabaseInitializer.cs" />
+    <Compile Include="../ChronosAD/Services/PunchService.cs" />
+    <Compile Include="../ChronosAD/Services/MessageService.cs" />
+    <Compile Include="../ChronosAD/ViewModels/BaseViewModel.cs" />
+    <Compile Include="../ChronosAD/ViewModels/MainViewModel.cs" />
+    <Compile Include="../ChronosAD/ViewModels/ManagementViewModel.cs" />
+    <Compile Include="../ChronosAD/ViewModels/RegistrationViewModel.cs" />
+  </ItemGroup>
+  <!-- AuthService excluded: WindowsIdentity is Windows-only -->
+  <!-- All Views excluded: WPF is Windows-only -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.1" />
+  </ItemGroup>
+</Project>

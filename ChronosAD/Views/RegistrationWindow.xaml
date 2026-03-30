@@ -1,0 +1,46 @@
+<Window x:Class="ChronosAD.Views.RegistrationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ChronosAD — First-Time Registration"
+        Width="460" Height="440"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        Background="#1A1A2E">
+    <Grid Margin="40">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="16"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="8"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="16"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="16"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="ChronosAD" FontSize="28" FontWeight="Bold"
+                   Foreground="#E94560" HorizontalAlignment="Center"/>
+        <TextBlock Grid.Row="1" Text="Welcome! Please register your account."
+                   FontSize="14" Foreground="#B0BEC5" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+
+        <StackPanel Grid.Row="3">
+            <Label Content="First Name" Margin="0,0,0,4"/>
+            <TextBox x:Name="TxtFirstName" FontSize="14"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="5">
+            <Label Content="Last Name" Margin="0,0,0,4"/>
+            <TextBox x:Name="TxtLastName" FontSize="14"/>
+        </StackPanel>
+
+        <TextBlock Grid.Row="7" x:Name="TxtError" Foreground="#E94560"
+                   FontSize="12" HorizontalAlignment="Center" TextWrapping="Wrap"/>
+
+        <Button x:Name="BtnRegister" Grid.Row="9" Content="Register" Height="44"
+                Background="#E94560" Foreground="White"
+                Style="{StaticResource BaseButton}"
+                Click="BtnRegister_Click"/>
+    </Grid>
+</Window>

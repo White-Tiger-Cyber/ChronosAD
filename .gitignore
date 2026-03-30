@@ -1,0 +1,22 @@
+# Build output
+bin/
+obj/
+
+# Publish output (compiled deployable — not source)
+publish/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# NuGet
+*.nupkg
+packages/
+
+# Generated documents (not source)
+*.docx
+
+# OS
+.DS_Store
+Thumbs.db
