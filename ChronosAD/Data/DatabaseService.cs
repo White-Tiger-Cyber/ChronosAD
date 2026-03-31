@@ -155,6 +155,13 @@ public class DatabaseService
     {
         using var conn = GetConnection();
         conn.Open();
+        string? userSid = null;
+        if (_log != null)
+        {
+            using var sel = new SqlCommand("SELECT UserSID FROM Punches WHERE PunchID=@id", conn);
+            sel.Parameters.AddWithValue("@id", punchId);
+            userSid = sel.ExecuteScalar() as string;
+        }
         using var cmd = new SqlCommand(
             @"UPDATE Punches SET
                 ClockOutTime = GETDATE(),
@@ -166,7 +173,7 @@ public class DatabaseService
         cmd.Parameters.AddWithValue("@Note", (object?)note ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@IsAuto", isAutoLogout);
         cmd.ExecuteNonQuery();
-        _log?.Log("PUNCH_CLOCKOUT", $"PunchID={punchId} Note={note ?? "(none)"} IsAuto={isAutoLogout}");
+        _log?.Log("PUNCH_CLOCKOUT", $"PunchID={punchId} UserSID={userSid} Note={note ?? "(none)"} IsAuto={isAutoLogout}");
     }
 
     public List<Punch> GetPunchesForPeriod(string sid, DateTime periodStart, DateTime periodEnd)
