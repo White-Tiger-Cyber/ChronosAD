@@ -75,6 +75,7 @@ public class ManagementViewModel : BaseViewModel
     }
 
     public void SavePunchEdit(Punch punch) => _db.UpdatePunch(punch, _currentManagerSid);
+    public void DeletePunch(Punch punch) { _db.DeletePunch(punch.PunchID); LoadSelectedEmployeePunches(); }
     public void SaveConfig(Config config) => _db.SaveConfig(config);
     public void RespondToMessage(int messageId, string response) => _messageService.Respond(messageId, response);
     public void FreezeUser(string sid) { var u = _db.GetUserBySID(sid); if (u != null) { u.IsFrozen = !u.IsFrozen; _db.UpdateUser(u); Refresh(); } }

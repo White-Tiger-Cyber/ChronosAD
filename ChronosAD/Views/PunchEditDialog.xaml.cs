@@ -6,6 +6,7 @@ namespace ChronosAD.Views;
 public partial class PunchEditDialog : Window
 {
     private readonly Punch _punch;
+    public bool IsDelete { get; private set; } = false;
 
     public PunchEditDialog(Punch punch)
     {
@@ -36,6 +37,19 @@ public partial class PunchEditDialog : Window
 
         DialogResult = true;
         Close();
+    }
+
+    private void BtnDelete_Click(object sender, RoutedEventArgs e)
+    {
+        var result = MessageBox.Show(
+            $"Permanently delete this punch record?\n\nClock In: {_punch.ClockInTime:MM/dd/yyyy HH:mm}\nThis cannot be undone.",
+            "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+        if (result == MessageBoxResult.Yes)
+        {
+            IsDelete = true;
+            DialogResult = true;
+            Close();
+        }
     }
 
     private void BtnCancel_Click(object sender, RoutedEventArgs e)

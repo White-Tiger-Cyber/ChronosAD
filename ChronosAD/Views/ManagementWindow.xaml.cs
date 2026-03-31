@@ -39,7 +39,10 @@ public partial class ManagementWindow : Window
         var dlg = new PunchEditDialog(punch);
         if (dlg.ShowDialog() == true)
         {
-            _vm.SavePunchEdit(punch);
+            if (dlg.IsDelete)
+                _vm.DeletePunch(punch);
+            else
+                _vm.SavePunchEdit(punch);
             GridEmployees_SelectionChanged(sender, null!);
         }
     }

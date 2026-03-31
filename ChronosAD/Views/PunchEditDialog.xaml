@@ -35,13 +35,19 @@
                    Text="Original values will be preserved as an audit trail."
                    FontSize="11" Foreground="#FFA726" FontStyle="Italic"/>
 
-        <StackPanel Grid.Row="8" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="Cancel" Width="90" Height="36"
-                    Background="#37474F" Style="{StaticResource BaseButton}"
-                    Click="BtnCancel_Click" Margin="0,0,10,0"/>
-            <Button Content="Save" Width="90" Height="36"
-                    Background="#E94560" Style="{StaticResource BaseButton}"
-                    Click="BtnSave_Click"/>
-        </StackPanel>
+        <Grid Grid.Row="8">
+            <Button Content="Delete Punch" Width="120" Height="36"
+                    Background="#B71C1C" Style="{StaticResource BaseButton}"
+                    HorizontalAlignment="Left"
+                    Click="BtnDelete_Click"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Cancel" Width="90" Height="36"
+                        Background="#37474F" Style="{StaticResource BaseButton}"
+                        Click="BtnCancel_Click" Margin="0,0,10,0"/>
+                <Button Content="Save" Width="90" Height="36"
+                        Background="#E94560" Style="{StaticResource BaseButton}"
+                        Click="BtnSave_Click"/>
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>

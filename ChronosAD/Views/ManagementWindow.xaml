@@ -44,11 +44,33 @@
                     <Setter Property="FontFamily" Value="Segoe UI"/>
                     <Setter Property="FontSize" Value="13"/>
                     <Setter Property="Padding" Value="16,8"/>
-                    <Style.Triggers>
-                        <Trigger Property="IsSelected" Value="True">
-                            <Setter Property="Background" Value="#E94560"/>
-                        </Trigger>
-                    </Style.Triggers>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="TabItem">
+                                <Border x:Name="TabBorder"
+                                        Background="{TemplateBinding Background}"
+                                        BorderBrush="#E94560"
+                                        BorderThickness="1,1,1,0"
+                                        CornerRadius="4,4,0,0"
+                                        Padding="{TemplateBinding Padding}">
+                                    <ContentPresenter ContentSource="Header"
+                                                      HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center"
+                                                      TextBlock.Foreground="{TemplateBinding Foreground}"
+                                                      TextBlock.FontFamily="{TemplateBinding FontFamily}"
+                                                      TextBlock.FontSize="{TemplateBinding FontSize}"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter TargetName="TabBorder" Property="Background" Value="#E94560"/>
+                                    </Trigger>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="TabBorder" Property="Opacity" Value="0.85"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
                 </Style>
             </TabControl.Resources>
 
@@ -118,8 +140,10 @@
                                             <Setter Property="Background" Value="#E65100"/>
                                             <Setter Property="Foreground" Value="White"/>
                                         </DataTrigger>
-                                        <DataTrigger Binding="{Binding EditedBy}" Value="{x:Null}">
-                                        </DataTrigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter Property="Background" Value="#E94560"/>
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </Trigger>
                                     </Style.Triggers>
                                 </Style>
                             </DataGrid.RowStyle>

@@ -1,15 +1,18 @@
 using Microsoft.Data.SqlClient;
 using ChronosAD.Models;
+using ChronosAD.Services;
 
 namespace ChronosAD.Data;
 
 public class DatabaseService
 {
     private readonly string _connectionString;
+    private readonly AuditLogger? _log;
 
-    public DatabaseService(string connectionString)
+    public DatabaseService(string connectionString, AuditLogger? logger = null)
     {
         _connectionString = connectionString;
+        _log = logger;
     }
 
     private SqlConnection GetConnection() => new(_connectionString);
@@ -48,6 +51,7 @@ public class DatabaseService
         cmd.Parameters.AddWithValue("@LastName", user.LastName);
         cmd.Parameters.AddWithValue("@StartDate", user.StartDate);
         cmd.ExecuteNonQuery();
+        _log?.Log("USER_ADD", $"SID={user.SID} Name={user.FirstName} {user.LastName}");
     }
 
     public List<User> GetAllUsers()
@@ -88,15 +92,18 @@ public class DatabaseService
         cmd.Parameters.AddWithValue("@IsManager", user.IsManager);
         cmd.Parameters.AddWithValue("@IsFrozen", user.IsFrozen);
         cmd.ExecuteNonQuery();
+        _log?.Log("USER_UPDATE", $"SID={user.SID} Name={user.FirstName} {user.LastName} IsManager={user.IsManager} IsFrozen={user.IsFrozen}");
     }
 
     public void DeleteUser(string sid)
     {
         using var conn = GetConnection();
         conn.Open();
+        var user = GetUserBySID(sid);
         using var cmd = new SqlCommand("DELETE FROM Users WHERE SID=@SID", conn);
         cmd.Parameters.AddWithValue("@SID", sid);
         cmd.ExecuteNonQuery();
+        _log?.Log("USER_DELETE", $"SID={sid} Name={user?.FirstName} {user?.LastName}");
     }
 
     // ── Punch Methods ─────────────────────────────────────────────────────────
@@ -139,7 +146,9 @@ public class DatabaseService
               VALUES (@SID, GETDATE(), @Note)", conn);
         cmd.Parameters.AddWithValue("@SID", sid);
         cmd.Parameters.AddWithValue("@Note", (object?)note ?? DBNull.Value);
-        return (int)cmd.ExecuteScalar()!;
+        var punchId = (int)cmd.ExecuteScalar()!;
+        _log?.Log("PUNCH_CLOCKIN", $"PunchID={punchId} UserSID={sid} Note={note ?? "(none)"}");
+        return punchId;
     }
 
     public void ClockOut(int punchId, string? note = null, bool isAutoLogout = false)
@@ -157,6 +166,7 @@ public class DatabaseService
         cmd.Parameters.AddWithValue("@Note", (object?)note ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@IsAuto", isAutoLogout);
         cmd.ExecuteNonQuery();
+        _log?.Log("PUNCH_CLOCKOUT", $"PunchID={punchId} Note={note ?? "(none)"} IsAuto={isAutoLogout}");
     }
 
     public List<Punch> GetPunchesForPeriod(string sid, DateTime periodStart, DateTime periodEnd)
@@ -257,6 +267,25 @@ public class DatabaseService
         cmd.Parameters.AddWithValue("@ClockOut", (object?)punch.ClockOutTime ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@Editor", editorSid);
         cmd.ExecuteNonQuery();
+        _log?.Log("PUNCH_EDIT", $"PunchID={punch.PunchID} UserSID={punch.UserSID} EditedBy={editorSid} NewClockIn={punch.ClockInTime:yyyy-MM-dd HH:mm} NewClockOut={punch.ClockOutTime?.ToString("yyyy-MM-dd HH:mm") ?? "(active)"}");
+    }
+
+    public void DeletePunch(int punchId)
+    {
+        // Capture details before deletion so they appear in the audit log
+        using var conn = GetConnection();
+        conn.Open();
+        string? userSid = null; DateTime? clockIn = null; DateTime? clockOut = null;
+        using (var sel = new SqlCommand("SELECT UserSID, ClockInTime, ClockOutTime FROM Punches WHERE PunchID=@id", conn))
+        {
+            sel.Parameters.AddWithValue("@id", punchId);
+            using var r = sel.ExecuteReader();
+            if (r.Read()) { userSid = r.GetString(0); clockIn = r.GetDateTime(1); clockOut = r.IsDBNull(2) ? null : r.GetDateTime(2); }
+        }
+        using var cmd = new SqlCommand("DELETE FROM Punches WHERE PunchID = @id", conn);
+        cmd.Parameters.AddWithValue("@id", punchId);
+        cmd.ExecuteNonQuery();
+        _log?.Log("PUNCH_DELETE", $"PunchID={punchId} UserSID={userSid} ClockIn={clockIn?.ToString("yyyy-MM-dd HH:mm") ?? "?"} ClockOut={clockOut?.ToString("yyyy-MM-dd HH:mm") ?? "(active)"}");
     }
 
     public void AutoClockOutAllActive()
@@ -270,6 +299,7 @@ public class DatabaseService
                 IsAutoLogout = 1
               WHERE ClockOutTime IS NULL", conn);
         cmd.ExecuteNonQuery();
+        _log?.Log("AUTO_CLOCKOUT", "All active sessions clocked out");
     }
 
     // ── Message Methods ───────────────────────────────────────────────────────
@@ -284,6 +314,7 @@ public class DatabaseService
         cmd.Parameters.AddWithValue("@SID", sid);
         cmd.Parameters.AddWithValue("@Message", message);
         cmd.ExecuteNonQuery();
+        _log?.Log("MSG_SEND", $"UserSID={sid}");
     }
 
     public List<Message> GetMessagesForUser(string sid)
@@ -348,6 +379,7 @@ public class DatabaseService
         cmd.Parameters.AddWithValue("@Response", response);
         cmd.Parameters.AddWithValue("@ID", messageId);
         cmd.ExecuteNonQuery();
+        _log?.Log("MSG_RESPOND", $"MessageID={messageId}");
     }
 
     // ── Config Methods ────────────────────────────────────────────────────────
@@ -380,6 +412,7 @@ public class DatabaseService
         cmd.Parameters.AddWithValue("@Start", config.PayPeriodStartDate);
         cmd.Parameters.AddWithValue("@Holidays", holidayStr);
         cmd.ExecuteNonQuery();
+        _log?.Log("CONFIG_UPDATE", $"PayPeriodStart={config.PayPeriodStartDate:yyyy-MM-dd} HolidayCount={config.HolidayDates.Count}");
     }
 
     // ── Archive Methods ───────────────────────────────────────────────────────
@@ -399,6 +432,7 @@ public class DatabaseService
             "DELETE FROM Punches WHERE ClockInTime < @Cutoff", conn);
         deleteCmd.Parameters.AddWithValue("@Cutoff", cutoff);
         deleteCmd.ExecuteNonQuery();
+        _log?.Log("ARCHIVE", $"Records older than {cutoff:yyyy-MM-dd} moved to History_Archive");
     }
 
     public List<Punch> ExportPunches(DateTime from, DateTime to)
