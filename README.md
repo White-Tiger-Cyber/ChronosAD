@@ -23,6 +23,7 @@ Built with C#, WPF/.NET 8, and SQL Server Express 2022. Designed for deployment 
 - Auto clock-out all active sessions
 - Export punch data to CSV for payroll processing
 - Archive records older than one year
+- Flat-file audit log of all database writes (`C:\ProgramData\ChronosAD\audit.log`)
 
 ---
 
@@ -45,12 +46,33 @@ ChronosAD/
 ├── ChronosAD/              # Main WPF application
 │   ├── Data/               # DatabaseService, DatabaseInitializer
 │   ├── Models/             # User, Punch, Message, Config
-│   ├── Services/           # AuthService, PunchService, MessageService
+│   ├── Services/           # AuthService, PunchService, MessageService, AuditLogger
 │   ├── ViewModels/         # MVVM ViewModels
 │   └── Views/              # XAML windows and dialogs
 ├── ChronosAD.Database/     # Schema.sql — database schema + stored procedures
 ├── ChronosAD.Tests/        # Console test suite (60 tests)
 └── BUILD_AND_DEPLOY.md     # Full deployment guide
+```
+
+---
+
+## Audit Log
+
+All database write operations are recorded to a flat file on the server:
+
+```
+C:\ProgramData\ChronosAD\audit.log
+```
+
+Entries are timestamped and cover: user registration, user updates, account deletion, clock-in, clock-out, punch edits, punch deletion, auto clock-out, messages, config changes, and archiving. Once the file reaches 10 MB it is automatically rotated to `audit.log.bak` (keeping at most ~20 MB on disk at any time).
+
+The log path can be changed in `appsettings.json` without recompiling:
+
+```json
+{
+  "ConnectionString": "...",
+  "LogPath": "C:\\ProgramData\\ChronosAD\\audit.log"
+}
 ```
 
 ---
