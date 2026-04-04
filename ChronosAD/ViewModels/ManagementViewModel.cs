@@ -13,6 +13,7 @@ public class EmployeeStatus
     public double TotalHours { get; set; }
     public string TotalHoursDisplay => $"{(int)TotalHours}h {(int)((TotalHours % 1) * 60)}m";
     public string StatusDisplay => IsClockedIn ? "In" : "Out";
+    public string IsManagerDisplay => User.IsManager ? "Yes" : "No";
 }
 
 public class ManagementViewModel : BaseViewModel

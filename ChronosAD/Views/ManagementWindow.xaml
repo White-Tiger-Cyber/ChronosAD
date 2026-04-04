@@ -93,6 +93,7 @@
                                 <DataGridTextColumn Header="Status" Binding="{Binding StatusDisplay}" Width="60"/>
                                 <DataGridTextColumn Header="Hours" Binding="{Binding TotalHoursDisplay}" Width="70"/>
                                 <DataGridTextColumn Header="Frozen" Binding="{Binding User.IsFrozen}" Width="60"/>
+                                <DataGridTextColumn Header="Manager" Binding="{Binding IsManagerDisplay}" Width="70"/>
                             </DataGrid.Columns>
                             <DataGrid.RowStyle>
                                 <Style TargetType="DataGridRow">
@@ -104,6 +105,10 @@
                                             <Setter Property="Background" Value="#37474F"/>
                                             <Setter Property="Foreground" Value="#78909C"/>
                                         </DataTrigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter Property="Background" Value="#E94560"/>
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </Trigger>
                                     </Style.Triggers>
                                 </Style>
                             </DataGrid.RowStyle>
