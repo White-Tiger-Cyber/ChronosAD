@@ -15,14 +15,17 @@ Built with C#, WPF/.NET 8, and SQL Server Express 2022. Designed for deployment 
 - Send messages to managers and receive replies
 
 **Manager**
-- Real-time dashboard showing all employees' status and hours
-- Edit punch records with automatic audit trail (original values preserved)
+- Real-time dashboard showing all employees' status, hours, and manager flag
+- Add missing punch records for any employee
+- Edit or delete punch records with automatic audit trail (original values preserved)
+- Full punch history browser — navigate all historical pay periods per employee
+- Current pay period hours tally shown when viewing an employee's punches
 - Freeze / unfreeze accounts, promote / demote managers, delete users
-- Respond to employee messages
-- Configure pay period start date and holidays
-- Auto clock-out all active sessions
-- Export punch data to CSV for payroll processing
-- Archive records older than one year
+- Send and delete messages; respond to employee messages
+- Configure pay period start date and holidays (MM-DD-YYYY format)
+- Auto clock-out all active sessions at current time
+- Records older than one year are automatically archived on manager startup
+- Export punch data to CSV by employee name for payroll processing
 - Flat-file audit log of all database writes (`C:\ProgramData\ChronosAD\audit.log`)
 
 ---

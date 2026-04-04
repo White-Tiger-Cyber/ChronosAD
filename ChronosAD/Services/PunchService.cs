@@ -23,7 +23,7 @@ public class PunchService
     }
 
     public double CalculateTotalHours(List<Punch> punches)
-        => punches.Where(p => p.Duration.HasValue).Sum(p => p.Duration!.Value);
+        => punches.Where(p => p.Duration.HasValue).Sum(p => Math.Max(0, p.Duration!.Value));
 
     public bool TryClockIn(string sid, string? note, out string error)
     {

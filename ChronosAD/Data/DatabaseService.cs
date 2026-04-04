@@ -295,14 +295,31 @@ public class DatabaseService
         _log?.Log("PUNCH_DELETE", $"PunchID={punchId} UserSID={userSid} ClockIn={clockIn?.ToString("yyyy-MM-dd HH:mm") ?? "?"} ClockOut={clockOut?.ToString("yyyy-MM-dd HH:mm") ?? "(active)"}");
     }
 
+    public void AddPunch(string sid, DateTime clockIn, DateTime? clockOut, string? note, string addedBySid)
+    {
+        double? duration = clockOut.HasValue ? (clockOut.Value - clockIn).TotalHours : null;
+        using var conn = GetConnection();
+        conn.Open();
+        using var cmd = new SqlCommand(
+            @"INSERT INTO Punches (UserSID, ClockInTime, ClockOutTime, Duration, InNote, IsAutoLogout)
+              VALUES (@SID, @ClockIn, @ClockOut, @Duration, @Note, 0)", conn);
+        cmd.Parameters.AddWithValue("@SID", sid);
+        cmd.Parameters.AddWithValue("@ClockIn", clockIn);
+        cmd.Parameters.AddWithValue("@ClockOut", (object?)clockOut ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@Duration", (object?)duration ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@Note", (object?)note ?? DBNull.Value);
+        cmd.ExecuteNonQuery();
+        _log?.Log("PUNCH_ADD", $"UserSID={sid} ClockIn={clockIn:yyyy-MM-dd HH:mm} ClockOut={clockOut?.ToString("yyyy-MM-dd HH:mm") ?? "(active)"} AddedBy={addedBySid}");
+    }
+
     public void AutoClockOutAllActive()
     {
         using var conn = GetConnection();
         conn.Open();
         using var cmd = new SqlCommand(
             @"UPDATE Punches SET
-                ClockOutTime = CAST(CAST(GETDATE() AS DATE) AS DATETIME),
-                Duration = DATEDIFF(SECOND, ClockInTime, CAST(CAST(GETDATE() AS DATE) AS DATETIME)) / 3600.0,
+                ClockOutTime = GETDATE(),
+                Duration = DATEDIFF(SECOND, ClockInTime, GETDATE()) / 3600.0,
                 IsAutoLogout = 1
               WHERE ClockOutTime IS NULL", conn);
         cmd.ExecuteNonQuery();
@@ -387,6 +404,71 @@ public class DatabaseService
         cmd.Parameters.AddWithValue("@ID", messageId);
         cmd.ExecuteNonQuery();
         _log?.Log("MSG_RESPOND", $"MessageID={messageId}");
+    }
+
+    public void DeleteMessage(int messageId)
+    {
+        using var conn = GetConnection();
+        conn.Open();
+        string? userSid = null;
+        using (var sel = new SqlCommand("SELECT UserSID FROM Messages WHERE MessageID=@id", conn))
+        {
+            sel.Parameters.AddWithValue("@id", messageId);
+            userSid = sel.ExecuteScalar() as string;
+        }
+        using var cmd = new SqlCommand("DELETE FROM Messages WHERE MessageID=@id", conn);
+        cmd.Parameters.AddWithValue("@id", messageId);
+        cmd.ExecuteNonQuery();
+        _log?.Log("MSG_DELETE", $"MessageID={messageId} UserSID={userSid}");
+    }
+
+    public bool IsConfigSaved()
+    {
+        using var conn = GetConnection();
+        conn.Open();
+        using var cmd = new SqlCommand("SELECT COUNT(*) FROM Config", conn);
+        return (int)cmd.ExecuteScalar() > 0;
+    }
+
+    public List<Punch> GetPunchesForPeriodAllSources(string sid, DateTime start, DateTime end)
+    {
+        var punches = new List<Punch>();
+        using var conn = GetConnection();
+        conn.Open();
+        using var cmd = new SqlCommand(
+            @"SELECT PunchID, UserSID, ClockInTime, ClockOutTime, Duration,
+                     IsAutoLogout, InNote, OutNote, OriginalClockIn, OriginalClockOut, EditedBy, EditedAt
+              FROM Punches
+              WHERE UserSID=@SID AND ClockInTime >= @Start AND ClockInTime < @End
+              UNION ALL
+              SELECT PunchID, UserSID, ClockInTime, ClockOutTime, Duration,
+                     IsAutoLogout, InNote, OutNote, OriginalClockIn, OriginalClockOut, EditedBy, EditedAt
+              FROM History_Archive
+              WHERE UserSID=@SID AND ClockInTime >= @Start AND ClockInTime < @End
+              ORDER BY ClockInTime DESC", conn);
+        cmd.Parameters.AddWithValue("@SID", sid);
+        cmd.Parameters.AddWithValue("@Start", start);
+        cmd.Parameters.AddWithValue("@End", end);
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            punches.Add(new Punch
+            {
+                PunchID = reader.GetInt32(0),
+                UserSID = reader.GetString(1),
+                ClockInTime = reader.GetDateTime(2),
+                ClockOutTime = reader.IsDBNull(3) ? null : reader.GetDateTime(3),
+                Duration = reader.IsDBNull(4) ? null : reader.GetDouble(4),
+                IsAutoLogout = reader.GetBoolean(5),
+                InNote = reader.IsDBNull(6) ? null : reader.GetString(6),
+                OutNote = reader.IsDBNull(7) ? null : reader.GetString(7),
+                OriginalClockIn = reader.IsDBNull(8) ? null : reader.GetString(8),
+                OriginalClockOut = reader.IsDBNull(9) ? null : reader.GetString(9),
+                EditedBy = reader.IsDBNull(10) ? null : reader.GetString(10),
+                EditedAt = reader.IsDBNull(11) ? null : reader.GetDateTime(11)
+            });
+        }
+        return punches;
     }
 
     // ── Config Methods ────────────────────────────────────────────────────────

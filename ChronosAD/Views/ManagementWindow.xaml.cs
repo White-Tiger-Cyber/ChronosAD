@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
@@ -15,6 +16,14 @@ public partial class ManagementWindow : Window
         InitializeComponent();
         _vm = vm;
         Render();
+
+        // Silently archive records older than 1 year on manager startup
+        Loaded += async (_, _) =>
+        {
+            await Task.Run(() => _vm.SilentArchive());
+            _vm.Refresh();
+            Render();
+        };
     }
 
     private void Render()
@@ -22,7 +31,10 @@ public partial class ManagementWindow : Window
         GridEmployees.ItemsSource = _vm.Employees;
         GridAllMessages.ItemsSource = _vm.AllMessages;
         DpPayPeriodStart.SelectedDate = _vm.Config.PayPeriodStartDate;
-        TxtHolidays.Text = string.Join("\n", _vm.Config.HolidayDates.Select(d => d.ToString("yyyy-MM-dd")));
+        TxtHolidays.Text = string.Join("\n", _vm.Config.HolidayDates.Select(d => d.ToString("MM-dd-yyyy")));
+        TxtConfigWarning.Visibility = _vm.IsConfigSaved ? Visibility.Collapsed : Visibility.Visible;
+        LstPayPeriods.ItemsSource = _vm.PayPeriodList;
+        CboHistoryEmployee.ItemsSource = _vm.Employees;
     }
 
     private void GridEmployees_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -30,7 +42,26 @@ public partial class ManagementWindow : Window
         _vm.SelectedEmployee = GridEmployees.SelectedItem as EmployeeStatus;
         GridEmployeePunches.ItemsSource = _vm.SelectedPunches;
         if (_vm.SelectedEmployee != null)
+        {
             TxtSelectedEmployee.Text = $"Punches — {_vm.SelectedEmployee.User.FullName}";
+            TxtPeriodSummary.Text = _vm.SelectedEmployeePeriodSummary;
+        }
+        else
+        {
+            TxtSelectedEmployee.Text = "Select an employee to view punches";
+            TxtPeriodSummary.Text = "";
+        }
+    }
+
+    private void BtnAddPunch_Click(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedEmployee == null) return;
+        var dlg = new AddPunchDialog(_vm.SelectedEmployee.User.FullName);
+        if (dlg.ShowDialog() == true)
+        {
+            _vm.AddPunch(dlg.ClockIn, dlg.ClockOut, dlg.Note);
+            GridEmployees_SelectionChanged(sender, null!);
+        }
     }
 
     private void BtnEditPunch_Click(object sender, RoutedEventArgs e)
@@ -73,6 +104,12 @@ public partial class ManagementWindow : Window
         }
     }
 
+    private void BtnRefresh_Click(object sender, RoutedEventArgs e)
+    {
+        _vm.Refresh();
+        Render();
+    }
+
     private void BtnAutoClockOut_Click(object sender, RoutedEventArgs e)
     {
         var result = MessageBox.Show("This will clock out ALL currently active employees.\nProceed?",
@@ -105,6 +142,19 @@ public partial class ManagementWindow : Window
         }
     }
 
+    private void BtnDeleteMessage_Click(object sender, RoutedEventArgs e)
+    {
+        if (GridAllMessages.SelectedItem is not Message msg) return;
+        var result = MessageBox.Show(
+            $"Permanently delete this message from {msg.UserName}?\nThis cannot be undone.",
+            "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+        if (result == MessageBoxResult.Yes)
+        {
+            _vm.DeleteMessage(msg.MessageID);
+            GridAllMessages.ItemsSource = _vm.AllMessages;
+        }
+    }
+
     private void BtnReply_Click(object sender, RoutedEventArgs e)
     {
         if (GridAllMessages.SelectedItem is not Message msg) return;
@@ -126,6 +176,35 @@ public partial class ManagementWindow : Window
                 config.HolidayDates.Add(dt);
         }
         _vm.SaveConfig(config);
+        _vm.Refresh();
+        Render();
         TxtConfigStatus.Text = "Configuration saved.";
+    }
+
+    // ── Punch History Tab ─────────────────────────────────────────────────────
+
+    private void CboHistoryEmployee_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        _vm.SelectedHistoryEmployee = CboHistoryEmployee.SelectedItem as EmployeeStatus;
+        UpdateHistoryDisplay();
+    }
+
+    private void LstPayPeriods_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        _vm.SelectedHistoryPeriod = LstPayPeriods.SelectedItem as PayPeriodEntry;
+        UpdateHistoryDisplay();
+    }
+
+    private void UpdateHistoryDisplay()
+    {
+        GridHistoryPunches.ItemsSource = _vm.HistoryPunches;
+        TxtHistorySummary.Text = _vm.HistoryPeriodSummary;
+
+        if (_vm.SelectedHistoryEmployee != null && _vm.SelectedHistoryPeriod != null)
+            TxtHistoryHeader.Text = $"{_vm.SelectedHistoryEmployee.User.FullName} — {_vm.SelectedHistoryPeriod.Display}";
+        else if (_vm.SelectedHistoryEmployee != null)
+            TxtHistoryHeader.Text = $"{_vm.SelectedHistoryEmployee.User.FullName} — Select a pay period";
+        else
+            TxtHistoryHeader.Text = "Select an employee and pay period";
     }
 }

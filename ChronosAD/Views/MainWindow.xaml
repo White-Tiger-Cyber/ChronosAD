@@ -102,6 +102,10 @@
                                         <Setter Property="Background" Value="#BF360C"/>
                                         <Setter Property="Foreground" Value="White"/>
                                     </DataTrigger>
+                                    <DataTrigger Binding="{Binding HasBadDuration}" Value="True">
+                                        <Setter Property="Background" Value="#F57F17"/>
+                                        <Setter Property="Foreground" Value="White"/>
+                                    </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </DataGrid.RowStyle>
